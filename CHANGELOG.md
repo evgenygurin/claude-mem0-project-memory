@@ -8,12 +8,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Planned
-- LLM-powered session transcript analysis  
+- LLM-powered session transcript analysis
 - Team memory sharing across projects
 - Memory analytics and insights dashboard
 - Integration with GitHub Issues / Linear
 - Advanced conflict resolution for CLAUDE.md updates
 - Memory versioning and diff visualization
+- Individual significant change capture (optional)
+
+## [0.3.0] - 2025-12-14
+
+### Added
+- **Automatic memory persistence**: SessionEnd hook now directly adds session summaries to Mem0 via API
+- New function `add_memory_to_mem0()` in utils.sh for direct Mem0 API calls
+- New function `is_auto_add_enabled()` for configuration check
+- Configuration option `auto_add_to_mem0` (default: true) to control automatic addition
+- Hook settings `capture_session_summary` and `capture_significant_changes`
+- Rich metadata for auto-captured memories (project, timestamp, type, changes_count, source)
+- Direct curl-based Mem0 API integration (no dependency on MCP tools in hooks)
+
+### Changed
+- SessionEnd hook now **auto-saves** session summaries to Mem0 instead of just notifying
+- Session summaries include structured metadata for better searchability
+- Improved user messaging: shows memory ID after automatic capture
+- Config file now includes `auto_add_to_mem0` and enhanced `hook_settings`
+
+### Improved
+- No more manual `/mem0-capture` needed for session summaries
+- Session history is now automatically preserved in Mem0
+- Better JSON escaping for content in API calls
+- Comprehensive error handling for Mem0 API failures
+- Debug logging for API requests and responses
+
+### Documentation
+- Updated README.md with new automatic capture behavior
+- Added explanation of `auto_add_to_mem0` configuration option
+- Updated "Automatic Mode" section to reflect actual auto-save behavior
+- Added "Key Settings" section explaining new configuration options
+
+### Technical Details
+- Direct HTTP calls to `https://api.mem0.ai/v1/memories/`
+- Authentication via `Authorization: Token ${MEM0_API_KEY}` header
+- Proper JSON body construction with jq
+- Memory ID extraction and reporting
+- Graceful degradation if auto-add fails (falls back to notification)
 
 ## [0.2.0] - 2025-12-14
 
