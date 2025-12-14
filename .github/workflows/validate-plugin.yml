@@ -1,0 +1,77 @@
+name: Validate Plugin Configuration
+
+on:
+  push:
+    paths:
+      - '.claude-plugin/**'
+      - 'hooks/**'
+      - 'commands/**'
+      - 'skills/**'
+      - '.github/workflows/validate-plugin.yml'
+  pull_request:
+    paths:
+      - '.claude-plugin/**'
+      - 'hooks/**'
+      - 'commands/**'
+      - 'skills/**'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    name: Validate Plugin Files
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Validate plugin.json
+        run: |
+          echo "Validating plugin.json..."
+          jq . .claude-plugin/plugin.json > /dev/null
+          if [ $? -eq 0 ]; then
+            echo "✅ plugin.json is valid JSON"
+          else
+            echo "❌ plugin.json is invalid JSON"
+            exit 1
+          fi
+      
+      - name: Validate hooks.json
+        run: |
+          echo "Validating hooks.json..."
+          jq . hooks/hooks.json > /dev/null
+          if [ $? -eq 0 ]; then
+            echo "✅ hooks.json is valid JSON"
+          else
+            echo "❌ hooks.json is invalid JSON"
+            exit 1
+          fi
+      
+      - name: Validate config.json
+        run: |
+          echo "Validating config/memory-config.json..."
+          jq . config/memory-config.json > /dev/null
+          if [ $? -eq 0 ]; then
+            echo "✅ config.json is valid JSON"
+          else
+            echo "❌ config.json is invalid JSON"
+            exit 1
+          fi
+      
+      - name: Validate command frontmatter
+        run: |
+          echo "Validating command YAML frontmatter..."
+          for file in commands/*.md; do
+            if [ -f "$file" ]; then
+              echo "Checking $file..."
+              head -20 "$file" | grep -q "^---$" && echo "✅ $file has valid YAML" || { echo "❌ $file invalid"; exit 1; }
+            fi
+          done
+      
+      - name: Verify PostToolUse hook structure
+        run: |
+          echo "Verifying PostToolUse hooks..." 
+          if grep -A 5 '"PostToolUse"' hooks/hooks.json | grep -q '"hooks": \['; then
+            echo "✅ PostToolUse hooks properly nested"
+          else
+            echo "❌ PostToolUse hooks missing 'hooks' array"
+            exit 1
+          fi
