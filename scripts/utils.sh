@@ -1,7 +1,19 @@
 #!/usr/bin/env bash
+# Utility functions for Mem0 plugin
 
-CONFIG_FILE="${CLAUDE_PLUGIN_ROOT:-$PWD}/config/memory-config.json"
+# Exit codes
+readonly EXIT_SUCCESS=0
+readonly EXIT_CONFIG_ERROR=1
+readonly EXIT_DEPENDENCY_ERROR=2
+readonly EXIT_VALIDATION_ERROR=3
+readonly EXIT_MEM0_ERROR=4
 
+# Get config file path
+get_config_file() {
+    echo "${CLAUDE_PLUGIN_ROOT:-$PWD}/config/memory-config.json"
+}
+
+# Logging functions
 log_info() {
     echo "[$(date +'%Y-%m-%d %H:%M:%S')] [mem0-plugin] INFO: $*" >&2
 }
@@ -14,79 +26,208 @@ log_error() {
     echo "[$(date +'%Y-%m-%d %H:%M:%S')] [mem0-plugin] ERROR: $*" >&2
 }
 
-# Check if jq is available
+log_debug() {
+    if [[ "${DEBUG:-0}" == "1" ]]; then
+        echo "[$(date +'%Y-%m-%d %H:%M:%S')] [mem0-plugin] DEBUG: $*" >&2
+    fi
+}
+
+# Dependency checks
 require_jq() {
     if ! command -v jq &> /dev/null; then
-        log_error "jq is required but not installed"
-        return 1
+        log_error "jq is required but not installed. Install it with: brew install jq (macOS) or apt-get install jq (Linux)"
+        return ${EXIT_DEPENDENCY_ERROR}
     fi
-    return 0
+    return ${EXIT_SUCCESS}
+}
+
+require_curl() {
+    if ! command -v curl &> /dev/null; then
+        log_error "curl is required but not installed"
+        return ${EXIT_DEPENDENCY_ERROR}
+    fi
+    return ${EXIT_SUCCESS}
+}
+
+# Environment validation
+validate_plugin_env() {
+    if [[ -z "${CLAUDE_PLUGIN_ROOT:-}" ]]; then
+        log_error "CLAUDE_PLUGIN_ROOT is not set"
+        return ${EXIT_VALIDATION_ERROR}
+    fi
+    
+    if [[ ! -d "${CLAUDE_PLUGIN_ROOT}" ]]; then
+        log_error "CLAUDE_PLUGIN_ROOT directory does not exist: ${CLAUDE_PLUGIN_ROOT}"
+        return ${EXIT_VALIDATION_ERROR}
+    fi
+    
+    return ${EXIT_SUCCESS}
+}
+
+validate_project_dir() {
+    local project_dir="${1:-${CLAUDE_PROJECT_DIR}}"
+    
+    if [[ -z "${project_dir}" ]]; then
+        log_error "Project directory not provided and CLAUDE_PROJECT_DIR is not set"
+        return ${EXIT_VALIDATION_ERROR}
+    fi
+    
+    if [[ ! -d "${project_dir}" ]]; then
+        log_error "Project directory does not exist: ${project_dir}"
+        return ${EXIT_VALIDATION_ERROR}
+    fi
+    
+    return ${EXIT_SUCCESS}
+}
+
+# Config reading functions
+read_config() {
+    local key="${1}"
+    local default="${2:-}"
+    local config_file=$(get_config_file)
+    
+    if [[ ! -f "${config_file}" ]]; then
+        echo "${default}"
+        return ${EXIT_SUCCESS}
+    fi
+    
+    if ! require_jq; then
+        echo "${default}"
+        return ${EXIT_DEPENDENCY_ERROR}
+    fi
+    
+    local value=$(jq -r ".${key} // \"${default}\"" "${config_file}" 2>/dev/null)
+    echo "${value}"
 }
 
 is_auto_capture_enabled() {
-    if [[ -f "$CONFIG_FILE" ]] && require_jq; then
-        AUTO_CAPTURE=$(jq -r '.auto_capture // true' "$CONFIG_FILE")
-        [[ "$AUTO_CAPTURE" == "true" ]]
-    else
-        return 0  # default enabled
-    fi
+    local enabled=$(read_config "auto_capture" "true")
+    [[ "${enabled}" == "true" ]]
 }
 
 is_sync_enabled() {
-    if [[ -f "$CONFIG_FILE" ]] && require_jq; then
-        SYNC_ENABLED=$(jq -r '.sync_to_claude_md // true' "$CONFIG_FILE")
-        [[ "$SYNC_ENABLED" == "true" ]]
-    else
-        return 0  # default enabled
-    fi
+    local enabled=$(read_config "sync_to_claude_md" "true")
+    [[ "${enabled}" == "true" ]]
 }
 
 is_auto_load_context_enabled() {
-    if [[ -f "$CONFIG_FILE" ]] && require_jq; then
-        AUTO_LOAD=$(jq -r '.auto_load_context // false' "$CONFIG_FILE")
-        [[ "$AUTO_LOAD" == "true" ]]
-    else
-        return 1  # default disabled
-    fi
+    local enabled=$(read_config "auto_load_context" "false")
+    [[ "${enabled}" == "true" ]]
 }
 
 get_reflection_threshold() {
-    if [[ -f "$CONFIG_FILE" ]] && require_jq; then
-        jq -r '.reflection_threshold // 5' "$CONFIG_FILE"
-    else
-        echo "5"
+    read_config "reflection_threshold" "5"
+}
+
+# Session state management
+get_session_state_dir() {
+    echo "${HOME}/.claude/plugins/mem0/sessions"
+}
+
+ensure_session_state_dir() {
+    local state_dir=$(get_session_state_dir)
+    if [[ ! -d "${state_dir}" ]]; then
+        mkdir -p "${state_dir}" || {
+            log_error "Failed to create session state directory: ${state_dir}"
+            return ${EXIT_VALIDATION_ERROR}
+        }
     fi
+    return ${EXIT_SUCCESS}
 }
 
 get_session_state_file() {
-    local session_id="${CLAUDE_SESSION_ID:-unknown}"
-    echo "${HOME}/.claude/plugins/mem0/sessions/${session_id}/state.json"
+    local project_dir="${1:-${CLAUDE_PROJECT_DIR}}"
+    local project_name=$(basename "${project_dir}")
+    echo "$(get_session_state_dir)/${project_name}-state.json"
+}
+
+init_session_state() {
+    local state_file="${1}"
+    
+    if [[ ! -f "${state_file}" ]]; then
+        echo '{"changes_count": 0, "started_at": "'$(date -Iseconds)'", "last_sync": null}' > "${state_file}" || {
+            log_error "Failed to initialize session state file: ${state_file}"
+            return ${EXIT_VALIDATION_ERROR}
+        }
+    fi
+    
+    return ${EXIT_SUCCESS}
 }
 
 get_changes_count() {
-    local state_file=$(get_session_state_file)
-    if [[ -f "${state_file}" ]] && require_jq; then
-        jq -r '.changes_count // 0' "${state_file}"
-    else
+    local state_file="${1}"
+    
+    if [[ ! -f "${state_file}" ]] || ! require_jq; then
         echo "0"
+        return ${EXIT_SUCCESS}
     fi
+    
+    jq -r '.changes_count // 0' "${state_file}" 2>/dev/null || echo "0"
+}
+
+increment_changes_count() {
+    local state_file="${1}"
+    
+    if [[ ! -f "${state_file}" ]]; then
+        init_session_state "${state_file}"
+    fi
+    
+    if ! require_jq; then
+        return ${EXIT_DEPENDENCY_ERROR}
+    fi
+    
+    local tmp_file="${state_file}.tmp"
+    jq '.changes_count = (.changes_count // 0) + 1' "${state_file}" > "${tmp_file}" && \
+        mv "${tmp_file}" "${state_file}" || {
+        log_error "Failed to increment changes count"
+        rm -f "${tmp_file}"
+        return ${EXIT_VALIDATION_ERROR}
+    }
+    
+    return ${EXIT_SUCCESS}
 }
 
 reset_changes_count() {
-    local state_file=$(get_session_state_file)
-    if [[ -f "${state_file}" ]] && require_jq; then
-        jq '.changes_count = 0 | .last_sync = "'$(date -Iseconds)'"' "${state_file}" > "${state_file}.tmp" && mv "${state_file}.tmp" "${state_file}"
+    local state_file="${1}"
+    
+    if [[ ! -f "${state_file}" ]] || ! require_jq; then
+        return ${EXIT_SUCCESS}
     fi
+    
+    local tmp_file="${state_file}.tmp"
+    jq '.changes_count = 0 | .last_sync = "'$(date -Iseconds)'"' "${state_file}" > "${tmp_file}" && \
+        mv "${tmp_file}" "${state_file}" || {
+        log_error "Failed to reset changes count"
+        rm -f "${tmp_file}"
+        return ${EXIT_VALIDATION_ERROR}
+    }
+    
+    return ${EXIT_SUCCESS}
 }
 
-# Output JSON for hook responses
+# JSON output for hooks
 output_json() {
-    local json="$1"
+    local json="${1}"
     echo "${json}"
 }
 
-# Output system message to Claude
 output_system_message() {
-    local message="$1"
-    output_json '{"systemMessage": "'"${message}"'"}'
+    local message="${1}"
+    output_json "{\"systemMessage\": \"${message}\"}"
+}
+
+output_error() {
+    local message="${1}"
+    output_json "{\"error\": \"${message}\"}"
+}
+
+# Mem0 API check (optional)
+check_mem0_connectivity() {
+    if [[ -z "${MEM0_API_KEY:-}" ]]; then
+        log_warn "MEM0_API_KEY is not set, Mem0 features may not work"
+        return ${EXIT_CONFIG_ERROR}
+    fi
+    
+    # Basic API check could be added here
+    return ${EXIT_SUCCESS}
 }

@@ -6,7 +6,7 @@
         "type": "command",
         "description": "Initialize Mem0 plugin environment for the session",
         "command": "${CLAUDE_PLUGIN_ROOT}/scripts/init-session.sh",
-        "args": ["${CLAUDE_SESSION_ID}", "${CLAUDE_PROJECT_DIR}"],
+        "args": ["${CLAUDE_PROJECT_DIR}"],
         "timeout": 10,
         "enabled": true
       }
@@ -16,7 +16,7 @@
         "type": "command",
         "description": "Capture session summary and key insights into Mem0",
         "command": "${CLAUDE_PLUGIN_ROOT}/scripts/summarize-session.sh",
-        "args": ["${CLAUDE_SESSION_ID}", "${CLAUDE_TRANSCRIPT_PATH}"],
+        "args": ["${CLAUDE_PROJECT_DIR}"],
         "timeout": 60,
         "enabled": true
       }
@@ -29,7 +29,7 @@
             "type": "command",
             "description": "Track significant code changes for memory sync",
             "command": "${CLAUDE_PLUGIN_ROOT}/scripts/track-change.sh",
-            "args": ["${CLAUDE_PROJECT_DIR}", "${TOOL_NAME}"],
+            "args": ["${CLAUDE_PROJECT_DIR}"],
             "timeout": 5,
             "throttle": 60,
             "enabled": true
@@ -43,7 +43,6 @@
             "type": "command",
             "description": "Log Mem0 interactions for debugging",
             "command": "${CLAUDE_PLUGIN_ROOT}/scripts/log-mem0-call.sh",
-            "args": ["${TOOL_NAME}"],
             "timeout": 3,
             "enabled": false
           }
@@ -55,7 +54,7 @@
         "type": "command",
         "description": "Quick capture of important context on manual stop",
         "command": "${CLAUDE_PLUGIN_ROOT}/scripts/summarize-session.sh",
-        "args": ["${CLAUDE_SESSION_ID}", "${CLAUDE_TRANSCRIPT_PATH}", "--quick"],
+        "args": ["${CLAUDE_PROJECT_DIR}", "--quick"],
         "timeout": 30,
         "enabled": true
       }

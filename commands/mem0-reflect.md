@@ -1,7 +1,7 @@
 ---
 name: mem0-reflect
-description: Analyze recent session transcripts and extract key learnings into Mem0
-argument-hint: "[session_count] (optional, default: 5)"
+description: Analyze recent development sessions to identify and capture recurring patterns, important decisions, and key learnings. Best used after completing a sprint, solving complex issues, or reaching milestones.
+argument-hint: "[number of sessions to analyze, default: 5]"
 allowed-tools:
   - MCP(mem0:*)
   - Read

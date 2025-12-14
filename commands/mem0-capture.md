@@ -1,11 +1,10 @@
 ---
 name: mem0-capture
-description: Explicitly capture an important insight, decision, or pattern into Mem0 project memory
-argument-hint: "[insight or decision to capture]"
+description: Explicitly capture an important insight, decision, or pattern into Mem0 project memory. Use this command to permanently store key learnings, architectural decisions, patterns, or constraints that should be remembered across sessions.
+argument-hint: "[insight, decision, or pattern to remember]"
 allowed-tools:
   - MCP(mem0:*)
   - Read
-  - Write
 ---
 
 # Mem0 Memory Capture

@@ -1,18 +1,13 @@
 {
   "name": "claude-mem0-project-memory",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Intelligent project memory management for Claude Code using Mem0. Automatically captures decisions, patterns, and context across sessions.",
-  "author": "Evgeny Gurin",
+  "author": {
+    "name": "Evgeny Gurin",
+    "email": "evgeny@example.com"
+  },
   "license": "MIT",
   "repository": "https://github.com/evgenygurin/claude-mem0-project-memory",
   "keywords": ["memory", "mem0", "context", "mcp", "automation"],
-  "hooks": {
-    "$ref": "./../hooks/hooks.json"
-  },
-  "config": {
-    "memory_mode": "project",
-    "auto_capture": true,
-    "sync_to_claude_md": true,
-    "reflection_threshold": 5
-  }
+  "homepage": "https://github.com/evgenygurin/claude-mem0-project-memory#readme"
 }
