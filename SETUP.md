@@ -73,7 +73,19 @@ MEM0_USER_ID=your_user_id  # optional
 
 ### 4. Test Locally
 
-Install in a test project:
+**Option A: Via Local Marketplace (Recommended)**
+
+```bash
+# Create development marketplace structure (already done in ../claude-mem0-marketplace)
+cd /path/to/claude-mem0-marketplace
+# marketplace.json already configured
+
+# In Claude Code:
+/plugin marketplace add /path/to/claude-mem0-marketplace
+/plugin install claude-mem0-project-memory@mem0-dev-marketplace
+```
+
+**Option B: Direct Installation**
 
 ```bash
 cd /path/to/test/project
@@ -113,23 +125,36 @@ ls -la scripts/*.sh
 Trigger hooks manually:
 
 ```bash
-# Test session summary
-CLAUDE_SESSION_ID=test-123 \
-CLAUDE_TRANSCRIPT_PATH=/path/to/transcript.txt \
-./scripts/summarize-session.sh
-
-# Test sync check
+# Test session initialization
+CLAUDE_PLUGIN_ROOT=/path/to/plugin \
 CLAUDE_PROJECT_DIR=/path/to/project \
-./scripts/sync-claude-md.sh
+./scripts/init-session.sh /path/to/project
+
+# Test change tracking
+CLAUDE_PLUGIN_ROOT=/path/to/plugin \
+CLAUDE_PROJECT_DIR=/path/to/project \
+./scripts/track-change.sh /path/to/project
+
+# Test session summary
+CLAUDE_PLUGIN_ROOT=/path/to/plugin \
+CLAUDE_PROJECT_DIR=/path/to/project \
+./scripts/summarize-session.sh /path/to/project
 ```
 
 ## Publishing
 
 ### To Claude Plugin Marketplace
 
-1. Ensure `plugin.json` is valid
-2. Create release tag: `git tag v0.1.0 && git push origin v0.1.0`
-3. Submit to marketplace (URL TBD)
+1. Ensure all files are valid:
+   ```bash
+   jq empty .claude-plugin/plugin.json
+   jq empty hooks/hooks.json
+   jq empty config/memory-config.json
+   jq empty .mcp.json
+   bash -n scripts/*.sh
+   ```
+2. Create release tag: `git tag v0.2.0 && git push origin v0.2.0`
+3. Submit to marketplace following [official guidelines](https://code.claude.com/docs/en/plugin-marketplaces)
 
 ### To Smithery (MCP Registry)
 
@@ -191,13 +216,44 @@ Add to `docs/images/`:
 - **Discussions**: Enable GitHub Discussions for Q&A
 - **Discord**: Consider creating community server
 
+## Environment Variables Reference
+
+### Official Claude Code Variables (Used by Plugin)
+- `CLAUDE_PLUGIN_ROOT` - Absolute path to plugin directory (set by Claude Code)
+- `CLAUDE_PROJECT_DIR` - Absolute path to project root (set by Claude Code)
+
+### Plugin-Specific Variables (Set by User)
+- `MEM0_API_KEY` - Your Mem0 API key (required)
+- `MEM0_USER_ID` - User identifier for Mem0 (optional, defaults to project name)
+- `DEBUG` - Set to "1" for verbose logging (optional)
+
+### Variables NOT Used (Removed in v0.2.0)
+- ❌ `CLAUDE_SESSION_ID` - Not officially documented, removed
+- ❌ `CLAUDE_TRANSCRIPT_PATH` - Not officially documented, removed
+
+## Compliance Checklist
+
+Before publishing, ensure:
+
+- [x] Plugin manifest contains only metadata
+- [x] Hooks use only official environment variables
+- [x] All scripts have input validation
+- [x] All scripts have proper error handling
+- [x] Commands have complete frontmatter
+- [x] JSON files are valid
+- [x] Bash scripts have valid syntax
+- [x] All scripts are executable
+- [x] Documentation is up-to-date
+- [x] Follows [official plugin specifications](https://code.claude.com/docs/en/plugins)
+
 ## Next Steps
 
 1. ✅ Repository created with full structure
-2. 🔲 Add GitHub topics via UI or CLI
-3. 🔲 Test plugin in real Claude Code environment
-4. 🔲 Add usage examples and screenshots
-5. 🔲 Set up CI/CD for validation
-6. 🔲 Create issue templates
-7. 🔲 Publish to plugin marketplace
-8. 🔲 Share on social media and forums
+2. ✅ Full refactoring for Claude Code compliance (v0.2.0)
+3. 🔲 Add GitHub topics via UI or CLI
+4. 🔲 Test plugin in real Claude Code environment with local marketplace
+5. 🔲 Add usage examples and screenshots
+6. 🔲 Set up CI/CD for validation
+7. 🔲 Create issue templates
+8. 🔲 Publish to official plugin marketplace
+9. 🔲 Share on social media and forums
