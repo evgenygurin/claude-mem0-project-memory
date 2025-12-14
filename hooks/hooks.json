@@ -1,0 +1,37 @@
+{
+  "description": "Automated memory capture and sync for Mem0-backed project memory",
+  "hooks": {
+    "SessionEnd": [
+      {
+        "type": "command",
+        "description": "Capture session summary into Mem0",
+        "command": "${CLAUDE_PLUGIN_ROOT}/scripts/summarize-session.sh",
+        "args": ["${CLAUDE_SESSION_ID}", "${CLAUDE_TRANSCRIPT_PATH}"],
+        "timeout": 60,
+        "enabled": true
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "type": "command",
+        "description": "Check if CLAUDE.md sync is needed after significant code changes",
+        "command": "${CLAUDE_PLUGIN_ROOT}/scripts/sync-claude-md.sh",
+        "args": ["${CLAUDE_PROJECT_DIR}", "${TOOL_NAME}"],
+        "timeout": 30,
+        "throttle": 300,
+        "enabled": true
+      }
+    ],
+    "Stop": [
+      {
+        "type": "command",
+        "description": "Quick capture of important context on manual stop",
+        "command": "${CLAUDE_PLUGIN_ROOT}/scripts/summarize-session.sh",
+        "args": ["${CLAUDE_SESSION_ID}", "${CLAUDE_TRANSCRIPT_PATH}", "--quick"],
+        "timeout": 30,
+        "enabled": true
+      }
+    ]
+  }
+}

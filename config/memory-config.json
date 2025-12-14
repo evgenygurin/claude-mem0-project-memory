@@ -1,0 +1,16 @@
+{
+  "memory_mode": "project",
+  "auto_capture": true,
+  "sync_to_claude_md": true,
+  "reflection_threshold": 5,
+  "memory_sections": {
+    "decisions": true,
+    "patterns": true,
+    "constraints": true,
+    "learnings": true
+  },
+  "mem0_settings": {
+    "search_limit": 10,
+    "relevance_threshold": 0.7
+  }
+}
