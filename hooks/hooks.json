@@ -14,7 +14,7 @@
     "SessionEnd": [
       {
         "type": "command",
-        "description": "Capture session summary into Mem0",
+        "description": "Capture session summary and key insights into Mem0",
         "command": "${CLAUDE_PLUGIN_ROOT}/scripts/summarize-session.sh",
         "args": ["${CLAUDE_SESSION_ID}", "${CLAUDE_TRANSCRIPT_PATH}"],
         "timeout": 60,
@@ -24,22 +24,30 @@
     "PostToolUse": [
       {
         "matcher": "Write|Edit",
-        "type": "command",
-        "description": "Track significant code changes for memory sync",
-        "command": "${CLAUDE_PLUGIN_ROOT}/scripts/track-change.sh",
-        "args": ["${CLAUDE_PROJECT_DIR}", "${TOOL_NAME}"],
-        "timeout": 5,
-        "throttle": 60,
-        "enabled": true
+        "hooks": [
+          {
+            "type": "command",
+            "description": "Track significant code changes for memory sync",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/track-change.sh",
+            "args": ["${CLAUDE_PROJECT_DIR}", "${TOOL_NAME}"],
+            "timeout": 5,
+            "throttle": 60,
+            "enabled": true
+          }
+        ]
       },
       {
         "matcher": "mcp__mem0__.*",
-        "type": "command",
-        "description": "Log Mem0 interactions for debugging",
-        "command": "${CLAUDE_PLUGIN_ROOT}/scripts/log-mem0-call.sh",
-        "args": ["${TOOL_NAME}"],
-        "timeout": 3,
-        "enabled": false
+        "hooks": [
+          {
+            "type": "command",
+            "description": "Log Mem0 interactions for debugging",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/log-mem0-call.sh",
+            "args": ["${TOOL_NAME}"],
+            "timeout": 3,
+            "enabled": false
+          }
+        ]
       }
     ],
     "Stop": [
