@@ -2,6 +2,7 @@
   "memory_mode": "project",
   "auto_capture": true,
   "sync_to_claude_md": true,
+  "auto_load_context": false,
   "reflection_threshold": 5,
   "memory_sections": {
     "decisions": true,
@@ -11,6 +12,18 @@
   },
   "mem0_settings": {
     "search_limit": 10,
-    "relevance_threshold": 0.7
+    "relevance_threshold": 0.7,
+    "max_memories_per_sync": 30
+  },
+  "skill_settings": {
+    "auto_recall_enabled": true,
+    "recall_threshold": 0.75,
+    "max_context_memories": 5
+  },
+  "hook_settings": {
+    "session_start_init": true,
+    "track_tool_usage": true,
+    "log_mem0_calls": false,
+    "min_changes_for_capture": 3
   }
 }
