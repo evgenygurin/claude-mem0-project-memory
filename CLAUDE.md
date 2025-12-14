@@ -24,6 +24,15 @@ Edit `config/memory-config.json` to customize:
 - `${CLAUDE_PROJECT_DIR}`: Project root directory absolute path
 - `$ARGUMENTS`: Arguments passed to slash commands
 
+**Extracting project name:**
+```bash
+# In bash hooks:
+PROJECT_NAME=$(basename "${CLAUDE_PROJECT_DIR}")
+
+# In Claude commands (describe to Claude):
+# "Extract project name using basename of ${CLAUDE_PROJECT_DIR}"
+```
+
 **Required in `.mcp.json`:**
 - `MEM0_API_KEY`: Your Mem0 API key
 - `MEM0_USER_ID`: (Optional) User identifier, defaults to project name
