@@ -1,44 +1,125 @@
-***
+---
 name: mem0-reflect
 description: Analyze recent session transcripts and extract key learnings into Mem0
-argument-hint: "[session_count] (default: 5)"
-allowed-tools: ["MCP(mem0:*)", "Read"]
-***
+argument-hint: "[session_count] (optional, default: 5)"
+allowed-tools:
+  - MCP(mem0:*)
+  - Read
+---
 
 # Mem0 Reflection
 
-Analyze recent development sessions and extract important patterns.
+Analyze recent development sessions to extract and store important patterns.
+
+## When to Use
+
+- At end of sprint/milestone to capture learnings
+- After resolving a complex issue across multiple sessions
+- Weekly review of accumulated knowledge
+- Before starting similar work to avoid repeating mistakes
 
 ## Process
 
-1. **Load session data**:
-   - Read last N session transcripts (from ARGUMENTS or default 5)
-   - Extract tool usage, decisions, errors, solutions
+### 1. Load Session Data
 
-2. **Identify patterns**:
-   - Recurring problems and solutions
-   - Design decisions and rationale
-   - Performance insights
-   - Testing approaches
-   - Architectural choices
+- Read last N session transcripts (from `$ARGUMENTS` or default to 5)
+- Look in `${CLAUDE_TRANSCRIPT_PATH}` or session history
+- Extract:
+  - Tool usage patterns
+  - Decisions made and rationale
+  - Errors encountered and solutions
+  - Performance insights
+  - Testing approaches
 
-3. **Filter for importance**:
-   - Skip trivial/one-off fixes
-   - Focus on reusable knowledge
-   - Identify "this should be in CLAUDE.md" moments
+### 2. Identify Patterns
 
-4. **Store in Mem0**:
-   - Create memory entries for each pattern
-   - Link related memories
-   - Tag appropriately
+Analyze for:
 
-5. **Suggest CLAUDE.md updates**:
-   - Offer to run /mem0-sync if significant patterns found
-   - Show preview of what would be added
+**Recurring Problems & Solutions**
+- Same error fixed multiple times → Document solution
+- Pattern emerges across sessions → Create best practice
 
-## Example Usage
+**Design Decisions**
+- Why certain architectures were chosen
+- Trade-offs considered
+- Rejected alternatives and why
 
+**Performance Insights**
+- Bottlenecks discovered
+- Optimization strategies that worked
+- Benchmarking results
+
+**Testing Approaches**
+- Test strategies that caught bugs
+- Edge cases discovered
+- Useful test patterns
+
+**Architectural Choices**
+- Module boundaries
+- Dependency decisions
+- Technology selections
+
+### 3. Filter for Importance
+
+**Skip:**
+- One-off fixes unlikely to recur
+- Trivial style changes
+- Session navigation/setup
+
+**Capture:**
+- Reusable knowledge
+- "This should be in CLAUDE.md" moments
+- Hard-won insights
+- Team-relevant patterns
+
+### 4. Store in Mem0
+
+For each significant pattern:
+- Create memory entry with appropriate type
+- Link related memories if applicable
+- Tag with relevant keywords
+- Include source session IDs
+
+### 5. Suggest CLAUDE.md Updates
+
+- If significant patterns found (≥3), offer to run `/mem0-sync`
+- Show preview of what would be added:
+
+```
+Found 5 significant patterns:
+- Decision: Switched to async error handling (session_7)
+- Pattern: Use builder pattern for complex configs (sessions 5-7)
+- Learning: Database indexes critical for query X (session_6)
+
+Run /mem0-sync to add these to CLAUDE.md?
+```
+
+## Examples
+
+**User:**
 ```
 /mem0-reflect
+```
+
+**You should:**
+1. Analyze last 5 sessions
+2. Extract 3-10 key patterns
+3. Store in Mem0
+4. Suggest sync if valuable patterns found
+
+**User:**
+```
 /mem0-reflect 10
 ```
+
+**You should:**
+1. Analyze last 10 sessions (broader retrospective)
+2. Look for longer-term trends
+3. Focus on strategic patterns
+
+## Edge Cases
+
+- No sessions available: Inform user gracefully
+- Sessions too old (>30 days): Ask if they want to proceed
+- Too many patterns (>20): Prioritize by impact, ask user to review
+- No significant patterns: Report "No new patterns found, sessions were routine"
