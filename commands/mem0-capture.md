@@ -35,7 +35,7 @@ Create a concise summary (1-2 sentences) with metadata:
 {
   "content": "Clear description of the insight",
   "metadata": {
-    "project": "${CLAUDE_PROJECT_DIR_NAME}",
+    "project": "<project name from basename of CLAUDE_PROJECT_DIR>",
     "timestamp": "<ISO 8601 timestamp>",
     "type": "decision|pattern|constraint|learning",
     "tags": ["relevant", "keywords"],
@@ -44,12 +44,14 @@ Create a concise summary (1-2 sentences) with metadata:
 }
 ```
 
+**Note:** Extract project name using the last component of `${CLAUDE_PROJECT_DIR}` path.
+
 ### 3. Store in Mem0
 
-- Use MCP `mem0` tool to add the memory
-- Search for similar existing memories first
-- If a duplicate exists, update/merge instead of creating new
-- Use the project name as the user_id for scoping
+- Use MCP `mcp__mem0__add_memory` tool to add the memory
+- Use `mcp__mem0__search_memory` to check for similar existing memories first
+- If a duplicate exists, ask user if they want to update or create separate
+- Use the project name (from `basename ${CLAUDE_PROJECT_DIR}`) as the user_id for scoping
 
 ### 4. Confirm
 

@@ -48,15 +48,15 @@ Example queries:
 
 Use MCP mem0 tools to:
 ```
-search_memories(
+mcp__mem0__search_memory(
   query: "<semantic query>",
-  user_id: "${CLAUDE_PROJECT_DIR_NAME}",
+  user_id: "<project name from basename CLAUDE_PROJECT_DIR>",
   limit: 5-10
 )
 ```
 
 Filter by:
-- Project scope (always use project name as user_id)
+- Project scope (extract project name from `basename ${CLAUDE_PROJECT_DIR}`, use as user_id)
 - Relevance threshold (>0.7)
 - Memory types (decisions, patterns, constraints)
 
