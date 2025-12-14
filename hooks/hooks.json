@@ -1,6 +1,16 @@
 {
   "description": "Automated memory capture and sync for Mem0-backed project memory",
   "hooks": {
+    "SessionStart": [
+      {
+        "type": "command",
+        "description": "Initialize Mem0 plugin environment for the session",
+        "command": "${CLAUDE_PLUGIN_ROOT}/scripts/init-session.sh",
+        "args": ["${CLAUDE_SESSION_ID}", "${CLAUDE_PROJECT_DIR}"],
+        "timeout": 10,
+        "enabled": true
+      }
+    ],
     "SessionEnd": [
       {
         "type": "command",
@@ -15,12 +25,21 @@
       {
         "matcher": "Write|Edit",
         "type": "command",
-        "description": "Check if CLAUDE.md sync is needed after significant code changes",
-        "command": "${CLAUDE_PLUGIN_ROOT}/scripts/sync-claude-md.sh",
+        "description": "Track significant code changes for memory sync",
+        "command": "${CLAUDE_PLUGIN_ROOT}/scripts/track-change.sh",
         "args": ["${CLAUDE_PROJECT_DIR}", "${TOOL_NAME}"],
-        "timeout": 30,
-        "throttle": 300,
+        "timeout": 5,
+        "throttle": 60,
         "enabled": true
+      },
+      {
+        "matcher": "mcp__mem0__.*",
+        "type": "command",
+        "description": "Log Mem0 interactions for debugging",
+        "command": "${CLAUDE_PLUGIN_ROOT}/scripts/log-mem0-call.sh",
+        "args": ["${TOOL_NAME}"],
+        "timeout": 3,
+        "enabled": false
       }
     ],
     "Stop": [
