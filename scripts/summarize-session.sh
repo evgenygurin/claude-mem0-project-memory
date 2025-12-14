@@ -47,10 +47,47 @@ if [[ "${QUICK_MODE}" == "--quick" ]]; then
     output_system_message "Session ended with ${CHANGES_COUNT} code changes. Consider capturing key decisions with /mem0-capture."
 else
     log_info "Full session summary: ${CHANGES_COUNT} changes recorded"
-    
-    # Future: Could analyze session transcript here
-    # For now, just provide a notification
-    output_system_message "Session completed. ${CHANGES_COUNT} code changes were made. Use /mem0-reflect to extract learnings from recent sessions."
+
+    # Auto-add session summary to Mem0 if enabled
+    if is_auto_add_enabled && is_capture_session_summary_enabled; then
+        local project_name=$(basename "${PROJECT_DIR}")
+        local timestamp=$(date -Iseconds)
+        local session_date=$(date '+%Y-%m-%d %H:%M')
+
+        # Create session summary content
+        local summary_content="Session completed on ${session_date} for project '${project_name}': ${CHANGES_COUNT} code changes were made during this development session."
+
+        # Create metadata
+        local metadata=$(jq -n \
+            --arg project "${project_name}" \
+            --arg timestamp "${timestamp}" \
+            --arg type "session_summary" \
+            --arg changes "${CHANGES_COUNT}" \
+            '{
+                project: $project,
+                timestamp: $timestamp,
+                type: $type,
+                changes_count: ($changes | tonumber),
+                source: "SessionEnd hook"
+            }')
+
+        log_info "Adding session summary to Mem0"
+
+        # Add to Mem0 (proper exit code checking)
+        memory_id=$(add_memory_to_mem0 "${summary_content}" "${project_name}" "${metadata}")
+        local add_exit_code=$?
+        
+        if [[ ${add_exit_code} -eq 0 && -n "${memory_id}" ]]; then
+            log_info "Session summary added to Mem0: ${memory_id}"
+            output_system_message "✅ Session completed. ${CHANGES_COUNT} changes recorded and automatically saved to project memory [${memory_id}]."
+        else
+            log_warn "Failed to add session summary to Mem0"
+            output_system_message "Session completed. ${CHANGES_COUNT} code changes were made. Use /mem0-reflect to extract learnings from recent sessions."
+        fi
+    else
+        # Auto-add disabled, just notify
+        output_system_message "Session completed. ${CHANGES_COUNT} code changes were made. Use /mem0-reflect to extract learnings from recent sessions."
+    fi
 fi
 
 # Reset changes counter for next session

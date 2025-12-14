@@ -1,6 +1,7 @@
 {
   "memory_mode": "project",
   "auto_capture": true,
+  "auto_add_to_mem0": true,
   "sync_to_claude_md": true,
   "auto_load_context": false,
   "reflection_threshold": 5,
@@ -24,6 +25,8 @@
     "session_start_init": true,
     "track_tool_usage": true,
     "log_mem0_calls": false,
-    "min_changes_for_capture": 3
+    "min_changes_for_capture": 3,
+    "capture_session_summary": true,
+    "capture_significant_changes": false
   }
 }

@@ -58,7 +58,7 @@ export MEM0_USER_ID="your-user-id"  # optional, defaults to project name
 
 #### 5. Enable in Claude Code
 
-```
+```text
 /settings plugins
 # Enable claude-mem0-project-memory
 ```
@@ -70,10 +70,13 @@ export MEM0_USER_ID="your-user-id"  # optional, defaults to project name
 Once enabled, the plugin automatically:
 
 1. **Initializes** at session start
-2. **Tracks changes** as you edit code
+2. **Tracks changes** as you edit code (Write/Edit tool usage)
 3. **Recalls memories** when relevant context exists (via agent skill)
-4. **Captures insights** at session end
-5. **Notifies** when sync threshold is reached
+4. **Auto-saves to Mem0** at session end (SessionEnd hook)
+   - Captures session summary with change count
+   - Stores directly to Mem0 via API (no manual intervention needed)
+   - Includes metadata: project, timestamp, type, changes count
+5. **Notifies** when sync threshold is reached (5+ changes)
 
 ### 📝 Manual Commands
 
@@ -106,29 +109,38 @@ Edit `.claude/plugins/claude-mem0-project-memory/config/memory-config.json`:
 
 ```json
 {
-  "auto_capture": true,           // Capture at session end
-  "sync_to_claude_md": true,      // Auto-sync to CLAUDE.md
-  "auto_load_context": false,     // Load memories at session start
-  "reflection_threshold": 5,      // Changes before suggesting sync
-  
+  "auto_capture": true,                  // Enable hooks (tracking, notifications)
+  "auto_add_to_mem0": true,              // Auto-save session summaries to Mem0
+  "sync_to_claude_md": true,             // Auto-sync to CLAUDE.md
+  "auto_load_context": false,            // Load memories at session start
+  "reflection_threshold": 5,             // Changes before suggesting sync
+
   "skill_settings": {
-    "auto_recall_enabled": true,  // Enable automatic memory recall
-    "recall_threshold": 0.75,     // Minimum relevance for auto-recall
-    "max_context_memories": 5     // Max memories to load per recall
+    "auto_recall_enabled": true,         // Enable automatic memory recall
+    "recall_threshold": 0.75,            // Minimum relevance for auto-recall
+    "max_context_memories": 5            // Max memories to load per recall
   },
-  
+
   "hook_settings": {
-    "session_start_init": true,   // Initialize at session start
-    "track_tool_usage": true,     // Track Write/Edit events
-    "log_mem0_calls": false,      // Debug logging (verbose)
-    "min_changes_for_capture": 3  // Minimum edits before capture
+    "session_start_init": true,          // Initialize at session start
+    "track_tool_usage": true,            // Track Write/Edit events
+    "log_mem0_calls": false,             // Debug logging (verbose)
+    "min_changes_for_capture": 3,        // Minimum edits before capture
+    "capture_session_summary": true,     // Capture session summaries
+    "capture_significant_changes": false // Capture individual changes (verbose)
   }
 }
 ```
 
+### Key Settings
+
+- **`auto_add_to_mem0`**: When `true`, SessionEnd hook automatically adds session summary to Mem0 via API
+- **`capture_session_summary`**: Control whether session summaries are captured
+- **`capture_significant_changes`**: (Future) Capture individual significant code changes
+
 ## Architecture
 
-```
+```text
 ┌───────────────────────────┐
 │     Claude Code Agent      │
 │   (with Sonnet 4.5)       │
