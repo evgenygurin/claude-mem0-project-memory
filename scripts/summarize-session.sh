@@ -49,7 +49,7 @@ else
     log_info "Full session summary: ${CHANGES_COUNT} changes recorded"
 
     # Auto-add session summary to Mem0 if enabled
-    if is_auto_add_enabled; then
+    if is_auto_add_enabled && is_capture_session_summary_enabled; then
         local project_name=$(basename "${PROJECT_DIR}")
         local timestamp=$(date -Iseconds)
         local session_date=$(date '+%Y-%m-%d %H:%M')
@@ -73,8 +73,11 @@ else
 
         log_info "Adding session summary to Mem0"
 
-        # Add to Mem0
-        if memory_id=$(add_memory_to_mem0 "${summary_content}" "${project_name}" "${metadata}"); then
+        # Add to Mem0 (proper exit code checking)
+        memory_id=$(add_memory_to_mem0 "${summary_content}" "${project_name}" "${metadata}")
+        local add_exit_code=$?
+        
+        if [[ ${add_exit_code} -eq 0 && -n "${memory_id}" ]]; then
             log_info "Session summary added to Mem0: ${memory_id}"
             output_system_message "✅ Session completed. ${CHANGES_COUNT} changes recorded and automatically saved to project memory [${memory_id}]."
         else

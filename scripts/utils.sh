@@ -270,13 +270,15 @@ add_memory_to_mem0() {
     log_debug "Mem0 API request: ${request_body}"
 
     # Make API call
+    local mem0_api_url="${MEM0_API_URL:-https://api.mem0.ai/v1/memories/}"
     local response=$(curl -sf \
+        --max-time 30 \
         -X POST \
         -H "Authorization: Token ${MEM0_API_KEY}" \
         -H "Content-Type: application/json" \
         -H "Accept: application/json" \
         -d "${request_body}" \
-        "https://api.mem0.ai/v1/memories/" 2>&1)
+        "${mem0_api_url}" 2>&1)
 
     local curl_exit_code=$?
 
@@ -303,5 +305,11 @@ add_memory_to_mem0() {
 # Check if auto-add to Mem0 is enabled
 is_auto_add_enabled() {
     local enabled=$(read_config "auto_add_to_mem0" "true")
+    [[ "${enabled}" == "true" ]]
+}
+
+# Check if capture session summary is enabled
+is_capture_session_summary_enabled() {
+    local enabled=$(read_config "hook_settings.capture_session_summary" "true")
     [[ "${enabled}" == "true" ]]
 }
