@@ -1,39 +1,58 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Source utilities
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/utils.sh"
 
-PROJECT_DIR="${1:-$PWD}"
-TOOL_NAME="${2:-unknown}"
-
-# Read stdin JSON if available
-if [[ ! -t 0 ]]; then
-    INPUT_JSON=$(cat)
-    # Could parse tool_input/tool_response here for more context
+# Validate environment
+if ! validate_plugin_env; then
+    exit ${EXIT_VALIDATION_ERROR}
 fi
 
-log_info "Mem0 Plugin: Tracking change (tool: ${TOOL_NAME})"
+# Get project directory from arguments or environment
+PROJECT_DIR="${1:-${CLAUDE_PROJECT_DIR:-}}"
 
-# Increment change counter
-SESSION_ID="${CLAUDE_SESSION_ID:-unknown}"
-STATE_FILE="${HOME}/.claude/plugins/mem0/sessions/${SESSION_ID}/state.json"
+if ! validate_project_dir "${PROJECT_DIR}"; then
+    exit ${EXIT_VALIDATION_ERROR}
+fi
 
-if [[ -f "${STATE_FILE}" ]]; then
-    CURRENT_COUNT=$(jq -r '.changes_count // 0' "${STATE_FILE}" 2>/dev/null || echo "0")
-    NEW_COUNT=$((CURRENT_COUNT + 1))
-    
-    jq --arg count "${NEW_COUNT}" '.changes_count = ($count | tonumber)' "${STATE_FILE}" > "${STATE_FILE}.tmp" && mv "${STATE_FILE}.tmp" "${STATE_FILE}"
-    
-    log_info "Change count: ${NEW_COUNT}"
-    
-    # Check if sync threshold reached
-    THRESHOLD=$(get_reflection_threshold)
-    if [[ "${NEW_COUNT}" -ge "${THRESHOLD}" ]]; then
-        log_info "Sync threshold reached (${NEW_COUNT}/${THRESHOLD})"
-        # Trigger sync notification
-        echo '{"systemMessage": "💾 Mem0: Sync threshold reached. Consider running /mem0-sync"}' 
+# Check if auto-capture is enabled
+if ! is_auto_capture_enabled; then
+    log_debug "Auto-capture is disabled, skipping change tracking"
+    exit ${EXIT_SUCCESS}
+fi
+
+# Get session state
+STATE_FILE=$(get_session_state_file "${PROJECT_DIR}")
+
+# Initialize state if needed
+if [[ ! -f "${STATE_FILE}" ]]; then
+    if ! init_session_state "${STATE_FILE}"; then
+        log_error "Failed to initialize session state"
+        exit ${EXIT_VALIDATION_ERROR}
     fi
 fi
 
-exit 0
+# Increment changes count
+if ! increment_changes_count "${STATE_FILE}"; then
+    log_error "Failed to increment changes count"
+    exit ${EXIT_VALIDATION_ERROR}
+fi
+
+# Get current count
+CHANGES_COUNT=$(get_changes_count "${STATE_FILE}")
+THRESHOLD=$(get_reflection_threshold)
+
+log_debug "Changes count: ${CHANGES_COUNT}, Threshold: ${THRESHOLD}"
+
+# Check if sync is needed
+if [[ ${CHANGES_COUNT} -ge ${THRESHOLD} ]] && is_sync_enabled; then
+    log_info "Change threshold reached (${CHANGES_COUNT}/${THRESHOLD}), sync recommended"
+    output_system_message "💡 Tip: ${CHANGES_COUNT} code changes made. Consider running /mem0-sync to update project memory."
+    
+    # Reset counter after recommendation
+    reset_changes_count "${STATE_FILE}"
+fi
+
+exit ${EXIT_SUCCESS}

@@ -5,29 +5,41 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/utils.sh"
 
-SESSION_ID="${1:-unknown}"
-PROJECT_DIR="${2:-$PWD}"
-
-log_info "Mem0 Plugin: Initializing session ${SESSION_ID}"
-
-# Create session state directory
-SESSION_STATE_DIR="${HOME}/.claude/plugins/mem0/sessions/${SESSION_ID}"
-mkdir -p "${SESSION_STATE_DIR}"
-
-# Initialize change counter
-echo '{"changes_count": 0, "started_at": "'$(date -Iseconds)'"}' > "${SESSION_STATE_DIR}/state.json"
-
-# Check Mem0 connectivity (optional)
-if command -v curl &> /dev/null && [[ -n "${MEM0_API_KEY:-}" ]]; then
-    log_info "Checking Mem0 API connectivity..."
-    # Could add actual API check here
+# Validate environment
+if ! validate_plugin_env; then
+    exit ${EXIT_VALIDATION_ERROR}
 fi
+
+# Get project directory from arguments or environment
+PROJECT_DIR="${1:-${CLAUDE_PROJECT_DIR:-}}"
+
+if ! validate_project_dir "${PROJECT_DIR}"; then
+    exit ${EXIT_VALIDATION_ERROR}
+fi
+
+log_info "Mem0 Plugin: Initializing session for project: ${PROJECT_DIR}"
+
+# Ensure session state directory exists
+if ! ensure_session_state_dir; then
+    exit ${EXIT_VALIDATION_ERROR}
+fi
+
+# Initialize session state
+STATE_FILE=$(get_session_state_file "${PROJECT_DIR}")
+if ! init_session_state "${STATE_FILE}"; then
+    exit ${EXIT_VALIDATION_ERROR}
+fi
+
+log_info "Session state initialized: ${STATE_FILE}"
+
+# Check Mem0 connectivity (non-fatal)
+check_mem0_connectivity || log_warn "Mem0 API connectivity check failed, but continuing"
 
 # Load project-specific memory context (if configured)
 if is_auto_load_context_enabled; then
     log_info "Auto-loading project memory context"
-    # This would trigger context loading in future versions
+    # Future: trigger context loading via MCP
 fi
 
 log_info "Session initialized successfully"
-exit 0
+exit ${EXIT_SUCCESS}

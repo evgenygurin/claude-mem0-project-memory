@@ -1,10 +1,11 @@
 ---
 name: mem0-sync
-description: Sync important patterns from Mem0 back into project CLAUDE.md
-argument-hint: "[section] (optional: decisions|patterns|constraints|all)"
+description: Synchronize key patterns, decisions, and constraints from Mem0 back into the project's CLAUDE.md file. This keeps your project documentation up-to-date with the most important learnings and decisions.
+argument-hint: "[optional: decisions|patterns|constraints|learnings|all]"
 allowed-tools:
   - MCP(mem0:*)
   - Read
+  - Edit
   - Write
 ---
 

@@ -5,65 +5,56 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/utils.sh"
 
-SESSION_ID="${1:-unknown}"
-TRANSCRIPT_PATH="${2:-}"
-QUICK_MODE="${3:-}"
+# Validate environment
+if ! validate_plugin_env; then
+    exit ${EXIT_VALIDATION_ERROR}
+fi
 
-log_info "Mem0 Plugin: Session summary starting (session: ${SESSION_ID})"
+# Get project directory from arguments or environment
+PROJECT_DIR="${1:-${CLAUDE_PROJECT_DIR:-}}"
+QUICK_MODE="${2:-}"
+
+if ! validate_project_dir "${PROJECT_DIR}"; then
+    exit ${EXIT_VALIDATION_ERROR}
+fi
 
 # Check if auto-capture is enabled
 if ! is_auto_capture_enabled; then
-    log_info "Auto-capture disabled, skipping"
-    exit 0
+    log_debug "Auto-capture is disabled, skipping session summary"
+    exit ${EXIT_SUCCESS}
 fi
 
-# Read transcript if available
-if [[ -z "$TRANSCRIPT_PATH" ]] || [[ ! -f "$TRANSCRIPT_PATH" ]]; then
-    log_warn "No transcript available, skipping session summary"
-    exit 0
+log_info "Mem0 Plugin: Capturing session summary for project: ${PROJECT_DIR}"
+
+# Get session state
+STATE_FILE=$(get_session_state_file "${PROJECT_DIR}")
+
+if [[ ! -f "${STATE_FILE}" ]]; then
+    log_warn "Session state file not found, nothing to summarize"
+    exit ${EXIT_SUCCESS}
 fi
 
-# Count significant events
-EDIT_COUNT=$(grep -c "tool.*Edit\|Write" "$TRANSCRIPT_PATH" 2>/dev/null || echo "0")
-ERROR_COUNT=$(grep -c "error\|Error\|ERROR" "$TRANSCRIPT_PATH" 2>/dev/null || echo "0")
-DECISION_COUNT=$(grep -c "decision\|decided\|approach" "$TRANSCRIPT_PATH" 2>/dev/null || echo "0")
+# Get changes count
+CHANGES_COUNT=$(get_changes_count "${STATE_FILE}")
 
-log_info "Session stats: ${EDIT_COUNT} edits, ${ERROR_COUNT} errors, ${DECISION_COUNT} decisions"
-
-# Skip if session was trivial
-if [[ "$EDIT_COUNT" -lt 3 ]] && [[ "$ERROR_COUNT" -eq 0 ]] && [[ "$DECISION_COUNT" -eq 0 ]] && [[ "$QUICK_MODE" != "--quick" ]]; then
-    log_info "Session too small to capture (threshold: 3 edits or errors/decisions)"
-    exit 0
+if [[ ${CHANGES_COUNT} -eq 0 ]]; then
+    log_info "No significant changes in this session"
+    exit ${EXIT_SUCCESS}
 fi
 
-# Extract key patterns (simple heuristic - would be replaced by LLM call in production)
-KEY_PATTERNS=$(grep -E "decision|pattern|approach|fix|solution|implement" "$TRANSCRIPT_PATH" | head -n 10 || echo "")
-
-if [[ -z "$KEY_PATTERNS" ]]; then
-    log_info "No significant patterns found in session"
-    exit 0
-fi
-
-log_info "Capturing session insights to Mem0..."
-
-# In production, this would:
-# 1. Parse transcript more intelligently
-# 2. Use Claude API to summarize key decisions
-# 3. Call MCP mem0 tool to store memories
-# 4. Tag with project context
-
-# For now, create a marker file
-SESSION_STATE_DIR="${HOME}/.claude/plugins/mem0/sessions/${SESSION_ID}"
-mkdir -p "${SESSION_STATE_DIR}"
-echo "${KEY_PATTERNS}" > "${SESSION_STATE_DIR}/patterns.txt"
-
-log_info "Session summary complete. Found $(echo "${KEY_PATTERNS}" | wc -l) patterns."
-
-# Output success message to Claude
-if [[ "$QUICK_MODE" == "--quick" ]]; then
-    output_system_message "🧠 Mem0: Quick session capture completed"
+if [[ "${QUICK_MODE}" == "--quick" ]]; then
+    log_info "Quick mode: Session had ${CHANGES_COUNT} changes"
+    output_system_message "Session ended with ${CHANGES_COUNT} code changes. Consider capturing key decisions with /mem0-capture."
 else
-    output_system_message "🧠 Mem0: Session summary captured (${EDIT_COUNT} changes, ${DECISION_COUNT} decisions)"
+    log_info "Full session summary: ${CHANGES_COUNT} changes recorded"
+    
+    # Future: Could analyze session transcript here
+    # For now, just provide a notification
+    output_system_message "Session completed. ${CHANGES_COUNT} code changes were made. Use /mem0-reflect to extract learnings from recent sessions."
 fi
 
-exit 0
+# Reset changes counter for next session
+reset_changes_count "${STATE_FILE}"
+
+log_info "Session summary captured successfully"
+exit ${EXIT_SUCCESS}

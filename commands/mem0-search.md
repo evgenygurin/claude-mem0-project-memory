@@ -1,7 +1,7 @@
 ---
 name: mem0-search
-description: Search project memory in Mem0 for relevant context, decisions, or patterns
-argument-hint: "[search query]"
+description: Search project memory for relevant context, decisions, patterns, or past solutions using semantic search. Helps you find what was done before and why, avoiding repeated mistakes and maintaining consistency.
+argument-hint: "[search query - e.g., 'error handling patterns', 'database decisions']"
 allowed-tools:
   - MCP(mem0:*)
 ---
