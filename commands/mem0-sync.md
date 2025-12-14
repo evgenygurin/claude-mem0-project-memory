@@ -7,6 +7,7 @@ allowed-tools:
   - Read
   - Edit
   - Write
+  - Glob
 ---
 
 # Mem0 to CLAUDE.md Sync
@@ -31,7 +32,8 @@ Synchronize key patterns and decisions from Mem0 into the project's CLAUDE.md fi
 
 ### 2. Query Mem0
 
-- Fetch high-priority memories for `${CLAUDE_PROJECT_DIR_NAME}`
+- Fetch high-priority memories for current project (extract name from `basename ${CLAUDE_PROJECT_DIR}`)
+- Use `mcp__mem0__get_all_memories` with project filter
 - Filter by types: `decisions`, `patterns`, `constraints`
 - Sort by importance (number of references) and recency
 - Limit to top 20-30 most relevant

@@ -28,8 +28,8 @@ From `$ARGUMENTS`, identify:
 
 ### 2. Query Mem0
 
-- Use semantic search via MCP `mem0` tool
-- Filter by `project: ${CLAUDE_PROJECT_DIR_NAME}`
+- Use semantic search via MCP `mcp__mem0__search_memory` tool
+- Filter by project name (extract from `basename ${CLAUDE_PROJECT_DIR}`)
 - Retrieve top 5-10 most relevant memories
 - Set relevance threshold (default: 0.7)
 
