@@ -1,0 +1,24 @@
+{
+  "name": "claude-mem0-project-memory",
+  "owner": {
+    "name": "Evgeny Gurin",
+    "email": "evgeny@example.com"
+  },
+  "plugins": [
+    {
+      "name": "claude-mem0-project-memory",
+      "source": ".",
+      "description": "Intelligent project memory management for Claude Code using Mem0. Automatically captures decisions, patterns, and context across sessions.",
+      "version": "0.2.0",
+      "author": {
+        "name": "Evgeny Gurin",
+        "email": "evgeny@example.com"
+      },
+      "homepage": "https://github.com/evgenygurin/claude-mem0-project-memory#readme",
+      "repository": "https://github.com/evgenygurin/claude-mem0-project-memory",
+      "license": "MIT",
+      "keywords": ["memory", "mem0", "context", "mcp", "automation"],
+      "category": "productivity"
+    }
+  ]
+}
